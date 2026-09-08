@@ -1,0 +1,7 @@
+state/
+logs/
+__pycache__/
+_probe/
+_probe_*.html
+data/dashboard.html
+.claude/

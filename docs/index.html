@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>대학 학과별 경쟁률 대시보드</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+         margin: 24px; background: #fafafa; color: #222; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .gen { color: #888; font-size: 12px; margin-bottom: 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+           gap: 16px; margin-bottom: 24px; }
+  .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px;
+          padding: 16px 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card .sub { color: #666; font-size: 12px; margin-bottom: 12px; }
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .metric { text-align: center; padding: 8px 0; background: #f6f7fb; border-radius: 6px; }
+  .metric .label { font-size: 11px; color: #666; }
+  .metric .value { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .metric.rate .value { color: #d94a4a; }
+  .ref { font-size: 11px; color: #999; margin-top: 8px; }
+  .chart-wrap { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px;
+                padding: 16px 20px; margin-bottom: 20px; }
+  .chart-wrap h3 { margin: 0 0 12px; font-size: 14px; color: #444; }
+  .chart-wrap canvas { max-height: 320px; }
+  table { width: 100%; border-collapse: collapse; background: #fff;
+          border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden;
+          font-size: 13px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; text-align: center; }
+  th { background: #f6f7fb; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  .empty { color: #999; padding: 12px; text-align: center; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1a1a; color: #eee; }
+    .card, .chart-wrap, table { background: #232323; border-color: #333; }
+    .metric { background: #2b2b2b; }
+    th { background: #2b2b2b; }
+    th, td { border-bottom-color: #333; }
+    .gen, .sub, .metric .label, .ref { color: #888; }
+    .chart-wrap h3 { color: #bbb; }
+  }
+</style>
+</head>
+<body>
+<h1>대학 학과별 경쟁률 대시보드</h1>
+<div class="gen" id="gen"></div>
+
+<div class="cards" id="cards"></div>
+
+<div id="charts"></div>
+
+<h3 style="margin:24px 0 8px; font-size:14px;">전체 이력 (최신순)</h3>
+<div id="history"></div>
+
+<script>
+const DATA = {"generated_at": "2026-09-08 16:35:46 KST", "series": {"ajou_ace_economics": {"univ": "아주대학교", "type_name": "ACE전형", "unit_name": "경제정치사회융합학부", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio11040711.html", "points": [{"t": "2026-09-08T13:10:05+09:00", "ref": "2026-09-08 오후 1:00 현황", "recruit": 36, "applied": 63, "ratio_text": "1.75 : 1", "ratio_value": 1.75}]}, "yongin_free_major": {"univ": "용인대학교", "type_name": "자율전공 특별전형", "unit_name": "무전공학부", "url": "https://ratio.uwayapply.com/Sl5KVyVyV2FiSmYlJjomSjdmVGY=", "points": [{"t": "2026-09-08T13:10:05+09:00", "ref": "2026년 09월 08일 13시 10분 기준", "recruit": 100, "applied": 30, "ratio_text": "0.30 : 1", "ratio_value": 0.3}, {"t": "2026-09-08T13:48:28+09:00", "ref": "2026년 09월 08일 13시 45분 기준", "recruit": 100, "applied": 31, "ratio_text": "0.31 : 1", "ratio_value": 0.31}, {"t": "2026-09-08T15:00:43+09:00", "ref": "2026년 09월 08일 15시 00분 기준", "recruit": 100, "applied": 36, "ratio_text": "0.36 : 1", "ratio_value": 0.36}, {"t": "2026-09-08T16:00:22+09:00", "ref": "2026년 09월 08일 16시 00분 기준", "recruit": 100, "applied": 37, "ratio_text": "0.37 : 1", "ratio_value": 0.37}]}, "hufs_seolyu_intfinance": {"univ": "한국외국어대학교", "type_name": "학생부종합전형(서류형)", "unit_name": "국제금융학과", "url": "https://ratio.uwayapply.com/Sl5KJmg6fEpmJSY6Jko3ZlRm", "points": [{"t": "2026-09-08T13:48:28+09:00", "ref": "2026년 09월 08일 10시 00분 기준", "recruit": 5, "applied": 0, "ratio_text": "0.00 : 1", "ratio_value": 0.0}]}, "hufs_myeonjeop_intfinance": {"univ": "한국외국어대학교", "type_name": "학생부종합전형(면접형)", "unit_name": "국제금융학과", "url": "https://ratio.uwayapply.com/Sl5KJmg6fEpmJSY6Jko3ZlRm", "points": [{"t": "2026-09-08T13:54:06+09:00", "ref": "2026년 09월 08일 10시 00분 기준", "recruit": 5, "applied": 0, "ratio_text": "0.00 : 1", "ratio_value": 0.0}]}, "kgu_kgu_economics": {"univ": "경기대학교", "type_name": "학생부종합(KGU학생부종합전형)", "unit_name": "경제학부", "url": "https://ratio.uwayapply.com/Sl5KJXJyV2FiOUpmJSY6Jko3ZlRm", "points": [{"t": "2026-09-08T13:48:28+09:00", "ref": "2026년 09월 08일 13시 40분 기준", "recruit": 42, "applied": 28, "ratio_text": "0.67 : 1", "ratio_value": 0.67}, {"t": "2026-09-08T15:00:43+09:00", "ref": "2026년 09월 08일 15시 00분 기준", "recruit": 42, "applied": 30, "ratio_text": "0.71 : 1", "ratio_value": 0.71}, {"t": "2026-09-08T16:00:22+09:00", "ref": "2026년 09월 08일 16시 00분 기준", "recruit": 42, "applied": 31, "ratio_text": "0.74 : 1", "ratio_value": 0.74}, {"t": "2026-09-08T16:35:41+09:00", "ref": "2026년 09월 08일 16시 30분 기준", "recruit": 42, "applied": 32, "ratio_text": "0.76 : 1", "ratio_value": 0.76}]}, "dankook_social_econ": {"univ": "단국대학교", "type_name": "[학생부종합] 사회적배려대상자", "unit_name": "경제학과", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10420521.html", "points": [{"t": "2026-09-08T13:48:28+09:00", "ref": "2026-09-08 오후 1:45 현황", "recruit": 3, "applied": 3, "ratio_text": "1.00 : 1", "ratio_value": 1.0}, {"t": "2026-09-08T15:00:43+09:00", "ref": "2026-09-08 오후 2:55 현황", "recruit": 3, "applied": 4, "ratio_text": "1.33 : 1", "ratio_value": 1.33}, {"t": "2026-09-08T16:00:22+09:00", "ref": "2026-09-08 오후 3:55 현황", "recruit": 3, "applied": 5, "ratio_text": "1.67 : 1", "ratio_value": 1.67}]}, "gachon_baram_acctax": {"univ": "가천대학교", "type_name": "가천바람개비", "unit_name": "회계세무학과", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10190711.html", "points": [{"t": "2026-09-08T13:48:28+09:00", "ref": "2026-09-08 오후 1:40 현황", "recruit": 10, "applied": 7, "ratio_text": "0.70 : 1", "ratio_value": 0.7}, {"t": "2026-09-08T15:00:43+09:00", "ref": "2026-09-08 오후 2:50 현황", "recruit": 10, "applied": 8, "ratio_text": "0.80 : 1", "ratio_value": 0.8}]}, "hansung_talent_futuresocsci": {"univ": "한성대학교", "type_name": "한성인재전형", "unit_name": "미래융합사회과학대학", "url": "https://ratio.uwayapply.com/Sl5Kclc6Jlc4fEpmJSY6Jko3ZlRm", "points": [{"t": "2026-09-08T13:48:28+09:00", "ref": "2026년 09월 08일 13시 40분 기준", "recruit": 40, "applied": 53, "ratio_text": "1.33 : 1", "ratio_value": 1.33}, {"t": "2026-09-08T15:00:43+09:00", "ref": "2026년 09월 08일 15시 00분 기준", "recruit": 40, "applied": 54, "ratio_text": "1.35 : 1", "ratio_value": 1.35}, {"t": "2026-09-08T16:00:22+09:00", "ref": "2026년 09월 08일 16시 00분 기준", "recruit": 40, "applied": 57, "ratio_text": "1.43 : 1", "ratio_value": 1.43}]}, "myongji_talent_economics": {"univ": "명지대학교", "type_name": "학생부종합(명지인재면접전형)", "unit_name": "경제학전공", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10650761.html", "points": [{"t": "2026-09-08T13:48:28+09:00", "ref": "2026-09-08 오후 1:40 현황", "recruit": 6, "applied": 6, "ratio_text": "1.00 : 1", "ratio_value": 1.0}]}}, "history": [{"collected_at": "2026-09-08T16:35:41+09:00", "site_ref_time": "2026년 09월 08일 16시 30분 기준", "univ": "경기대학교", "type_name": "학생부종합(KGU학생부종합전형)", "unit_name": "경제학부", "recruit": "42", "applied": "32", "ratio_text": "0.76 : 1", "ratio_value": "0.76", "url": "https://ratio.uwayapply.com/Sl5KJXJyV2FiOUpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T16:00:22+09:00", "site_ref_time": "2026년 09월 08일 16시 00분 기준", "univ": "한성대학교", "type_name": "한성인재전형", "unit_name": "미래융합사회과학대학", "recruit": "40", "applied": "57", "ratio_text": "1.43 : 1", "ratio_value": "1.43", "url": "https://ratio.uwayapply.com/Sl5Kclc6Jlc4fEpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T16:00:22+09:00", "site_ref_time": "2026-09-08 오후 3:55 현황", "univ": "단국대학교", "type_name": "[학생부종합] 사회적배려대상자", "unit_name": "경제학과", "recruit": "3", "applied": "5", "ratio_text": "1.67 : 1", "ratio_value": "1.67", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10420521.html"}, {"collected_at": "2026-09-08T16:00:22+09:00", "site_ref_time": "2026년 09월 08일 16시 00분 기준", "univ": "경기대학교", "type_name": "학생부종합(KGU학생부종합전형)", "unit_name": "경제학부", "recruit": "42", "applied": "31", "ratio_text": "0.74 : 1", "ratio_value": "0.74", "url": "https://ratio.uwayapply.com/Sl5KJXJyV2FiOUpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T16:00:22+09:00", "site_ref_time": "2026년 09월 08일 16시 00분 기준", "univ": "용인대학교", "type_name": "자율전공 특별전형", "unit_name": "무전공학부", "recruit": "100", "applied": "37", "ratio_text": "0.37 : 1", "ratio_value": "0.37", "url": "https://ratio.uwayapply.com/Sl5KVyVyV2FiSmYlJjomSjdmVGY="}, {"collected_at": "2026-09-08T15:00:43+09:00", "site_ref_time": "2026년 09월 08일 15시 00분 기준", "univ": "한성대학교", "type_name": "한성인재전형", "unit_name": "미래융합사회과학대학", "recruit": "40", "applied": "54", "ratio_text": "1.35 : 1", "ratio_value": "1.35", "url": "https://ratio.uwayapply.com/Sl5Kclc6Jlc4fEpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T15:00:43+09:00", "site_ref_time": "2026-09-08 오후 2:50 현황", "univ": "가천대학교", "type_name": "가천바람개비", "unit_name": "회계세무학과", "recruit": "10", "applied": "8", "ratio_text": "0.80 : 1", "ratio_value": "0.8", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10190711.html"}, {"collected_at": "2026-09-08T15:00:43+09:00", "site_ref_time": "2026-09-08 오후 2:55 현황", "univ": "단국대학교", "type_name": "[학생부종합] 사회적배려대상자", "unit_name": "경제학과", "recruit": "3", "applied": "4", "ratio_text": "1.33 : 1", "ratio_value": "1.33", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10420521.html"}, {"collected_at": "2026-09-08T15:00:43+09:00", "site_ref_time": "2026년 09월 08일 15시 00분 기준", "univ": "경기대학교", "type_name": "학생부종합(KGU학생부종합전형)", "unit_name": "경제학부", "recruit": "42", "applied": "30", "ratio_text": "0.71 : 1", "ratio_value": "0.71", "url": "https://ratio.uwayapply.com/Sl5KJXJyV2FiOUpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T15:00:43+09:00", "site_ref_time": "2026년 09월 08일 15시 00분 기준", "univ": "용인대학교", "type_name": "자율전공 특별전형", "unit_name": "무전공학부", "recruit": "100", "applied": "36", "ratio_text": "0.36 : 1", "ratio_value": "0.36", "url": "https://ratio.uwayapply.com/Sl5KVyVyV2FiSmYlJjomSjdmVGY="}, {"collected_at": "2026-09-08T13:54:06+09:00", "site_ref_time": "2026년 09월 08일 10시 00분 기준", "univ": "한국외국어대학교", "type_name": "학생부종합전형(면접형)", "unit_name": "국제금융학과", "recruit": "5", "applied": "0", "ratio_text": "0.00 : 1", "ratio_value": "0.0", "url": "https://ratio.uwayapply.com/Sl5KJmg6fEpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T13:48:28+09:00", "site_ref_time": "2026-09-08 오후 1:40 현황", "univ": "명지대학교", "type_name": "학생부종합(명지인재면접전형)", "unit_name": "경제학전공", "recruit": "6", "applied": "6", "ratio_text": "1.00 : 1", "ratio_value": "1.0", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10650761.html"}, {"collected_at": "2026-09-08T13:48:28+09:00", "site_ref_time": "2026년 09월 08일 13시 40분 기준", "univ": "한성대학교", "type_name": "한성인재전형", "unit_name": "미래융합사회과학대학", "recruit": "40", "applied": "53", "ratio_text": "1.33 : 1", "ratio_value": "1.33", "url": "https://ratio.uwayapply.com/Sl5Kclc6Jlc4fEpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T13:48:28+09:00", "site_ref_time": "2026-09-08 오후 1:40 현황", "univ": "가천대학교", "type_name": "가천바람개비", "unit_name": "회계세무학과", "recruit": "10", "applied": "7", "ratio_text": "0.70 : 1", "ratio_value": "0.7", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10190711.html"}, {"collected_at": "2026-09-08T13:48:28+09:00", "site_ref_time": "2026-09-08 오후 1:45 현황", "univ": "단국대학교", "type_name": "[학생부종합] 사회적배려대상자", "unit_name": "경제학과", "recruit": "3", "applied": "3", "ratio_text": "1.00 : 1", "ratio_value": "1.0", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio10420521.html"}, {"collected_at": "2026-09-08T13:48:28+09:00", "site_ref_time": "2026년 09월 08일 13시 40분 기준", "univ": "경기대학교", "type_name": "학생부종합(KGU학생부종합전형)", "unit_name": "경제학부", "recruit": "42", "applied": "28", "ratio_text": "0.67 : 1", "ratio_value": "0.67", "url": "https://ratio.uwayapply.com/Sl5KJXJyV2FiOUpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T13:48:28+09:00", "site_ref_time": "2026년 09월 08일 10시 00분 기준", "univ": "한국외국어대학교", "type_name": "학생부종합전형(서류형)", "unit_name": "국제금융학과", "recruit": "5", "applied": "0", "ratio_text": "0.00 : 1", "ratio_value": "0.0", "url": "https://ratio.uwayapply.com/Sl5KJmg6fEpmJSY6Jko3ZlRm"}, {"collected_at": "2026-09-08T13:48:28+09:00", "site_ref_time": "2026년 09월 08일 13시 45분 기준", "univ": "용인대학교", "type_name": "자율전공 특별전형", "unit_name": "무전공학부", "recruit": "100", "applied": "31", "ratio_text": "0.31 : 1", "ratio_value": "0.31", "url": "https://ratio.uwayapply.com/Sl5KVyVyV2FiSmYlJjomSjdmVGY="}, {"collected_at": "2026-09-08T13:10:05+09:00", "site_ref_time": "2026년 09월 08일 13시 10분 기준", "univ": "용인대학교", "type_name": "자율전공 특별전형", "unit_name": "무전공학부", "recruit": "100", "applied": "30", "ratio_text": "0.30 : 1", "ratio_value": "0.3", "url": "https://ratio.uwayapply.com/Sl5KVyVyV2FiSmYlJjomSjdmVGY="}, {"collected_at": "2026-09-08T13:10:05+09:00", "site_ref_time": "2026-09-08 오후 1:00 현황", "univ": "아주대학교", "type_name": "ACE전형", "unit_name": "경제정치사회융합학부", "recruit": "36", "applied": "63", "ratio_text": "1.75 : 1", "ratio_value": "1.75", "url": "https://addon.jinhakapply.com/RatioV1/RatioH/Ratio11040711.html"}]};
+
+document.getElementById('gen').textContent = '생성 시각: ' + DATA.generated_at;
+
+const cardsEl = document.getElementById('cards');
+const chartsEl = document.getElementById('charts');
+
+Object.entries(DATA.series).forEach(([key, s]) => {
+  const latest = s.points.length ? s.points[s.points.length - 1] : null;
+  const recruit = latest ? latest.recruit : '-';
+  const applied = latest ? latest.applied : '-';
+  const ratio = latest ? latest.ratio_text : '-';
+  const ref = latest ? latest.ref : '데이터 없음';
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <h2>${s.univ}</h2>
+    <div class="sub">${s.type_name} · ${s.unit_name}</div>
+    <div class="metrics">
+      <div class="metric"><div class="label">모집인원</div><div class="value">${recruit}</div></div>
+      <div class="metric"><div class="label">지원인원</div><div class="value">${applied}</div></div>
+      <div class="metric rate"><div class="label">경쟁률</div><div class="value">${ratio}</div></div>
+    </div>
+    <div class="ref">사이트 기준: ${ref}</div>
+  `;
+  cardsEl.appendChild(card);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'chart-wrap';
+  wrap.innerHTML = `<h3>${s.univ} — ${s.unit_name} 시간 변화</h3><canvas id="chart_${key}"></canvas>`;
+  chartsEl.appendChild(wrap);
+
+  const labels = s.points.map(p => p.t.replace('T', ' ').slice(0, 16));
+  new Chart(document.getElementById('chart_' + key), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '지원인원',
+          data: s.points.map(p => p.applied),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.1)',
+          yAxisID: 'y',
+          tension: 0.2,
+        },
+        {
+          label: '경쟁률',
+          data: s.points.map(p => p.ratio_value),
+          borderColor: '#d94a4a',
+          backgroundColor: 'rgba(217,74,74,0.1)',
+          yAxisID: 'y1',
+          tension: 0.2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        y:  { type: 'linear', position: 'left',
+              title: { display: true, text: '지원인원' } },
+        y1: { type: 'linear', position: 'right',
+              title: { display: true, text: '경쟁률' },
+              grid: { drawOnChartArea: false } },
+      },
+    },
+  });
+});
+
+// 이력 테이블
+const hist = document.getElementById('history');
+if (!DATA.history.length) {
+  hist.innerHTML = '<div class="empty">아직 수집된 데이터가 없습니다.</div>';
+} else {
+  const cols = ['collected_at', 'site_ref_time', 'univ', 'type_name', 'unit_name',
+                'recruit', 'applied', 'ratio_text'];
+  const labels = ['수집시각', '사이트기준시각', '대학', '전형', '모집단위',
+                  '모집인원', '지원인원', '경쟁률'];
+  let html = '<table><thead><tr>';
+  labels.forEach(l => html += `<th>${l}</th>`);
+  html += '</tr></thead><tbody>';
+  DATA.history.forEach(r => {
+    html += '<tr>';
+    cols.forEach(c => html += `<td>${r[c] ?? ''}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  hist.innerHTML = html;
+}
+</script>
+</body>
+</html>
