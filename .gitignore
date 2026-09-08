@@ -5,3 +5,6 @@ _probe/
 _probe_*.html
 data/dashboard.html
 .claude/
+crawler.py
+M.md
+scheduler_setup.md
